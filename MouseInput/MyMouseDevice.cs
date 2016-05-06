@@ -3,14 +3,16 @@ using System.ComponentModel;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
-using HidLibrary;
-using ODIF;
+using System.Windows.Forms;
+using System.Windows.Input;
+using Gma.System.MouseKeyHook;
+using InputDevice = ODIF.InputDevice;
+using MouseEventArgs = System.Windows.Forms.MouseEventArgs;
 
 namespace MouseInput
 {
     public class MyMouseDevice : InputDevice
     {
-        internal HidDevice Device;
         internal MouseInputDevice DeviceWrapper;
 
 
@@ -18,22 +20,136 @@ namespace MouseInput
 
         private bool StopThread { get; set; }
 
-        public MyMouseDevice(HidDevice deviceInstance)
+        public MyMouseDevice()
         {
-            this.Device = deviceInstance;
-            Device.OpenDevice(DeviceMode.NonOverlapped, DeviceMode.NonOverlapped, ShareMode.ShareWrite | ShareMode.ShareRead);
             this.DeviceWrapper = new MouseInputDevice();
-            byte[] serialNumber;
-            byte[] product;
-            Device.ReadSerialNumber(out serialNumber);
-            Device.ReadProduct(out product);
-            base.DeviceName = Regex.Replace(Encoding.UTF8.GetString(product), "[^-a-zA-Z0-9 ]", String.Empty)
-                              + " (" + Regex.Replace(Encoding.UTF8.GetString(serialNumber), "[^-a-zA-Z0-9 ]", String.Empty) + ")";
-
+            base.DeviceName = "Mice, touchpads and stylus";
             AddChannels();
-            InputPoolingThread = new Thread(InputListenerThread);
-            InputPoolingThread.Start();
+            MGlobalHook = Hook.GlobalEvents();
+            Subscribe();
         }
+
+        private IKeyboardMouseEvents MGlobalHook { get; set; }
+
+
+        public void Subscribe()
+        {
+            //MGlobalHook.KeyPress
+            //MGlobalHook.KeyDown
+            //MGlobalHook.KeyUp
+            //MGlobalHook.KeyPress
+
+            MGlobalHook.MouseDownExt += MouseDownHandler;
+            MGlobalHook.MouseUp += MouseUpHandler;
+            //MGlobalHook.MouseClick
+            //MGlobalHook.MouseDoubleClick
+
+            MGlobalHook.MouseMove += MouseMoveHandler;
+            MGlobalHook.MouseWheel += MouseWheelHandler;
+            //MGlobalHook.MouseDragStarted
+            //MGlobalHook.MouseDragFinished
+
+        }
+
+        public void Unsubscribe()
+        {//MGlobalHook.KeyPress
+            //MGlobalHook.KeyDown
+            //MGlobalHook.KeyUp
+            //MGlobalHook.KeyPress
+
+            MGlobalHook.MouseDown -= MouseDownHandler;
+            MGlobalHook.MouseUp -= MouseUpHandler;
+            //MGlobalHook.MouseClick
+            //MGlobalHook.MouseDoubleClick
+
+            MGlobalHook.MouseMove -= MouseMoveHandler;
+            MGlobalHook.MouseWheel -= MouseWheelHandler;
+            //MGlobalHook.MouseDragStarted
+            //MGlobalHook.MouseDragFinished
+            MGlobalHook.Dispose();
+        }
+
+        private void MouseWheelHandler(object sender, MouseEventArgs e)
+        {
+        }
+
+        private void MouseMoveHandler(object sender, MouseEventArgs e)
+        {
+            DeviceWrapper.XPosition.Value = e.X;
+            DeviceWrapper.YPosition.Value = e.Y;
+        }
+
+        private void MouseDownHandler(object sender, MouseEventArgs e)
+        {
+            switch (e.Button)
+            {
+                case MouseButtons.Left:
+                    {
+                        DeviceWrapper.LeftButton.Value = true;
+                        break;
+                    }
+                case MouseButtons.Right:
+                    {
+                        DeviceWrapper.RightButton.Value = true;
+                        break;
+                    }
+                case MouseButtons.Middle:
+                    {
+                        DeviceWrapper.MiddleMouse.Value = true;
+                        break;
+                    }
+                case MouseButtons.XButton1:
+                    {
+                        DeviceWrapper.X1.Value = true;
+                        break;
+                    }
+                case MouseButtons.XButton2:
+                    {
+                        DeviceWrapper.X2.Value = true;
+                        break;
+                    }
+                default:
+                    {
+                        return;
+                    }
+            }
+        }
+        private void MouseUpHandler(object sender, MouseEventArgs e)
+        {
+            switch (e.Button)
+            {
+                case MouseButtons.Left:
+                    {
+                        DeviceWrapper.LeftButton.Value = false;
+                        break;
+                    }
+                case MouseButtons.Right:
+                    {
+                        DeviceWrapper.RightButton.Value = false;
+                        break;
+                    }
+                case MouseButtons.Middle:
+                    {
+                        DeviceWrapper.MiddleMouse.Value = false;
+                        break;
+                    }
+                case MouseButtons.XButton1:
+                    {
+                        DeviceWrapper.X1.Value = false;
+                        break;
+                    }
+                case MouseButtons.XButton2:
+                    {
+                        DeviceWrapper.X2.Value = false;
+                        break;
+                    }
+                default:
+                    {
+                        return;
+                    }
+            }
+        }
+
 
         private void AddChannels()
         {
@@ -64,30 +180,8 @@ namespace MouseInput
 
         protected override void Dispose(bool disposing)
         {
-            StopThread = true;
-            InputPoolingThread?.Abort();
-            Device.Dispose();
+            Unsubscribe();
             base.Dispose(disposing);
-        }
-
-        public void InputListenerThread()
-        {
-            while (!this.StopThread && !Global.IsShuttingDown)
-            {
-                try
-                {
-                    var currentState = Device.Read().Data;
-                    //if (currentState.Length < 21) continue;
-                    DeviceWrapper.LeftButton.Value = false;
-
-                }
-                catch (Exception)
-                {
-                    //error in reading from controller is ignored
-                    continue;
-                }
-
-            }
         }
 
     }
