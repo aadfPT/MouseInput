@@ -32,7 +32,7 @@ namespace HidLibrary
 
         public static IEnumerable<HidDevice> Enumerate(int vendorId, params int[] productIds)
         {
-            return EnumerateDevices().Select(x => new HidDevice(x.Path, x.Description)).Where(x => x.Attributes.VendorId == vendorId && 
+            return EnumerateDevices().Select(x => new HidDevice(x.Path, x.Description)).Where(x => x.Attributes.VendorId == vendorId &&
                                                                                   productIds.Contains(x.Attributes.ProductId));
         }
 
@@ -40,13 +40,23 @@ namespace HidLibrary
         {
             return EnumerateDevices().Select(x => new HidDevice(x.Path, x.Description)).Where(x => x.Attributes.VendorId == vendorId);
         }
+        public static IEnumerable<HidDevice> EnumerateAll()
+        {
+            return EnumerateDevices().Select(x => new HidDevice(x.Path, x.Description));
+        }
+        public static IEnumerable<HidDevice> EnumerateAllMice()
+        {
+            //Guid guidDevclassMouse = new Guid("4D1E55B2-F16F-11CF-88CB-001111000030"); //GUID_DEVINTERFACE_HID
+            Guid guidDevclassMouse = new Guid("378DE44C-56EF-11D1-BC8C-00A0C91405DD"); //GUID_DEVINTERFACE_MOUSE
+            return EnumerateDevices(guidDevclassMouse).Select(x => new HidDevice(x.Path, x.Description));
+        }
 
         private class DeviceInfo { public string Path { get; set; } public string Description { get; set; } }
 
-        private static IEnumerable<DeviceInfo> EnumerateDevices()
+        private static IEnumerable<DeviceInfo> EnumerateDevices(Guid? devClass = null)
         {
             var devices = new List<DeviceInfo>();
-            var hidClass = HidClassGuid;
+            var hidClass = devClass ?? HidClassGuid;
             var deviceInfoSet = NativeMethods.SetupDiGetClassDevs(ref hidClass, null, 0, NativeMethods.DIGCF_PRESENT | NativeMethods.DIGCF_DEVICEINTERFACE);
 
             if (deviceInfoSet.ToInt64() != NativeMethods.INVALID_HANDLE_VALUE)
@@ -66,7 +76,7 @@ namespace HidLibrary
                     {
                         deviceInterfaceIndex++;
                         var devicePath = GetDevicePath(deviceInfoSet, deviceInterfaceData);
-                        var description = GetBusReportedDeviceDescription(deviceInfoSet, ref deviceInfoData) ?? 
+                        var description = GetBusReportedDeviceDescription(deviceInfoSet, ref deviceInfoData) ??
                                           GetDeviceDescription(deviceInfoSet, ref deviceInfoData);
                         devices.Add(new DeviceInfo { Path = devicePath, Description = description });
                     }
@@ -95,7 +105,7 @@ namespace HidLibrary
 
             NativeMethods.SetupDiGetDeviceInterfaceDetailBuffer(deviceInfoSet, ref deviceInterfaceData, IntPtr.Zero, 0, ref bufferSize, IntPtr.Zero);
 
-            return NativeMethods.SetupDiGetDeviceInterfaceDetail(deviceInfoSet, ref deviceInterfaceData, ref interfaceDetail, bufferSize, ref bufferSize, IntPtr.Zero) ? 
+            return NativeMethods.SetupDiGetDeviceInterfaceDetail(deviceInfoSet, ref deviceInterfaceData, ref interfaceDetail, bufferSize, ref bufferSize, IntPtr.Zero) ?
                 interfaceDetail.DevicePath : null;
         }
 

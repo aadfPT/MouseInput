@@ -7,21 +7,21 @@ using System.Management;
 using System.Reflection;
 using HidLibrary;
 
-namespace MiController
+namespace MouseInput
 {
     [PluginInfo(
-        PluginName = "Mi Controller",
-        PluginDescription = "Adds support for the Mi Controller",
-        PluginVersion = "1.0.0.2",
-        PluginID = 56,
+        PluginName = "Mouse Input",
+        PluginDescription = "Adds support for the Mouse Input",
+        PluginVersion = "1.0.0.0",
+        PluginID = 999,
         PluginAuthorName = "André Ferreira",
         PluginAuthorEmail = "aadf.pt [at] gmail [dot] com",
         PluginAuthorURL = "https://github.com/aadfPT",
-        PluginIconPath = @"pack://application:,,,/Mi Controller;component/Resources/MIButton.png"
+        PluginIconPath = @"pack://application:,,,/Mouse Input;component/Resources/MIButton.png"
         )]
-    public class MiControllerPlugin : InputDevicePlugin
+    public class MouseInputPlugin : InputDevicePlugin
     {
-        public MiControllerPlugin()
+        public MouseInputPlugin()
         {
             Global.HardwareChangeDetected += CheckForControllersEvent;
             CheckForControllers();
@@ -32,22 +32,22 @@ namespace MiController
             CheckForControllers();
         }
 
-        private void CheckForControllers()
+        public void CheckForControllers()
         {
             lock (base.Devices)
             {
-                var compatibleDevices = HidDevices.Enumerate(0x2717, 0x3144).ToList();
+                var compatibleDevices = HidDevices.EnumerateAllMice().ToList();
                 foreach (var deviceInstance in compatibleDevices)
                 {
-                    if (Devices.Any(d => ((MyMiDevice)d).Device.DevicePath == deviceInstance.DevicePath))
+                    if (Devices.Any(d => ((MyMouseDevice)d).Device.DevicePath == deviceInstance.DevicePath))
                     {
                         continue;
                     }
-                    Devices.Add(new MyMiDevice(deviceInstance));
+                    Devices.Add(new MyMouseDevice(deviceInstance));
                 }
                 foreach (var inputDevice in Devices)
                 {
-                    var deviceReference = (MyMiDevice)inputDevice;
+                    var deviceReference = (MyMouseDevice)inputDevice;
                     if (compatibleDevices.All(d => d.DevicePath != deviceReference.Device.DevicePath))
                     {
                         Devices.Remove(deviceReference);

@@ -48,9 +48,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="MiControllerPlugin.cs" />
-    <Compile Include="Midevice.cs" />
-    <Compile Include="myMiDevice.cs" />
+    <Compile Include="MouseInputPlugin.cs" />
+    <Compile Include="MouseInputDevice.cs" />
+    <Compile Include="MyMouseDevice.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
