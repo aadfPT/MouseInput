@@ -9,11 +9,11 @@ namespace RawInput_dll
 {
     public class RawInput : NativeWindow
     {
-        static RawKeyboard _keyboardDriver;
-        static RawMouse _mouseDriver;
+        internal static RawKeyboard _keyboardDriver;
+        internal static RawMouse _mouseDriver;
         readonly IntPtr _devNotifyHandle;
         static readonly Guid DeviceInterfaceHid = new Guid("4D1E55B2-F16F-11CF-88CB-001111000030");
-        private List<PreMessageFilter> Filters { get; set; } = new List<PreMessageFilter>();
+        private PreMessageFilter Filter { get; set; }
 
         public event RawKeyboard.DeviceEventHandler KeyPressed
         {
@@ -31,20 +31,17 @@ namespace RawInput_dll
         public Dictionary<IntPtr, MouseEvent> MiceDevices => _mouseDriver.Devices;
         public Dictionary<IntPtr, KeyPressEvent> KeyboardsDeviceHandles => _keyboardDriver.DevicesHandles;
 
-        public void AddMessageFilter(IntPtr deviceHandle)
+        public void AddMessageFilter()
         {
-            var preMessageFilter = new PreMessageFilter(deviceHandle);
-            Filters.Add(preMessageFilter);
-            Application.AddMessageFilter(preMessageFilter);
+            Filter = new PreMessageFilter();//this);
+            Application.AddMessageFilter(Filter);
         }
 
         private void RemoveMessageFilters()
         {
-            if (null == Filters) return;
-            foreach (var preMessageFilter in Filters)
-            {
-                Application.RemoveMessageFilter(preMessageFilter);
-            }
+            if (null == Filter) return;
+            Application.RemoveMessageFilter(Filter);
+
         }
 
         public RawInput(IntPtr parentHandle, bool captureOnlyInForeground)
@@ -56,6 +53,7 @@ namespace RawInput_dll
             _mouseDriver = new RawMouse(parentHandle, captureOnlyInForeground);
             _mouseDriver.EnumerateDevices();
             _devNotifyHandle = RegisterForDeviceNotifications(parentHandle);
+            AddMessageFilter();
         }
 
         static IntPtr RegisterForDeviceNotifications(IntPtr parent)
@@ -104,7 +102,7 @@ namespace RawInput_dll
                             base.WndProc(ref message);
                         }
                         return;
-                    }
+                }
 
                 case Win32.WM_USB_DEVICECHANGE:
                     {
