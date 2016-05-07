@@ -1,9 +1,9 @@
-# MiControllerPluginForInputMapper
+# MouseInputForInputMapper
 Code for the plugin, that can also be forked to create custom plugins for other controllers
 
 
 
-It implements everything that a normal Xbox Controller does, but the gravity sensor is not available for now.
+It implements multiple mice and will support supressing them in the future
 
 To use download inputMapper 2 from https://inputmapper.com, install and from within the applications install this plugin.
 
